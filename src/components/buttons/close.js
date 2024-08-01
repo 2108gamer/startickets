@@ -98,9 +98,9 @@ collector.on('collect', async i => {
         const embed = new EmbedBuilder()
             .setDescription('# TICKET CERRADO \n\n <:padlock:1262139671304212572>¡Hola! Tu ticket ha sido cerrado. Has recibido una copia de tal en el archivo adjunto. A continuación, podrás dejar tu reseña sobre dicho ticket, ¡no olvides opinar para poder mejorar día a día la atención que le brindamos a nuestros usuarios! Gracias por elegirnos n.n.\n\n<:numero_warning:1262138350719074394> **IMPORTANTE**:\n<:line_red:1262140149840482344>El brindar una reseña injustificada puede derivar a prohibición permanente del soporte. Sé objetivo al brindar tal.')
             .setColor(0x0099ff)
-            .setImage("https://cdn.discordapp.com/attachments/1190208694298890311/1261067970080407592/Black_and_White_Sports_Football_Ticket_20240711_151257_0001.gif?ex=6694e851&is=669396d1&hm=18a3df61f05705c36433561e8bdc27c4f102bbc99a8e09be18756be35703bcb7&");
-
-        await i.user.send({ embeds: [embed], components: [selectRow], files: [attachment] });
+            .setImage("https://cdn.discordapp.com/attachments/1190208694298890311/1261067970080407592/Black_and_White_Sports_Football_Ticket_20240711_151257_0001.gif?ex=6694e851&is=669396d1&hm=18a3df61f05705c36433561e8bdc27c4f102bbc99a8e09be18756be35703bcb7&")
+            .addFields({value: 'Transcripcion del ticket:', name: `${response.data}`})
+        await i.user.send({ embeds: [embed], components: [selectRow]});
 
         // Borrar el canal
         await interaction.channel.delete();
