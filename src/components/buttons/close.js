@@ -1,6 +1,7 @@
 const { ButtonInteraction, SlashCommandBuilder, PermissionFlagsBits, Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, SelectMenuBuilder, MessageAttachment, Attachment } = require('discord.js');
 const ExtendedClient = require('../../class/ExtendedClient');
 const { createTranscript } = require('discord-html-transcripts');
+const perre = require('../../schemas/Schem');
 module.exports = {
     customId: 'closee',
     /**
@@ -94,12 +95,25 @@ collector.on('collect', async i => {
 
              const data = response.data
 
+             const mas = await perre.findOne({user: interaction.user.id})
+             console.log(mas)
+
+
         const embed = new EmbedBuilder()
-            .setDescription('# TICKET CERRADO \n\n <:padlock:1262139671304212572>¡Hola! Tu ticket ha sido cerrado. Has recibido una copia de tal en el archivo adjunto. A continuación, podrás dejar tu reseña sobre dicho ticket, ¡no olvides opinar para poder mejorar día a día la atención que le brindamos a nuestros usuarios! Gracias por elegirnos n.n.\n\n<:numero_warning:1262138350719074394> **IMPORTANTE**:\n<:line_red:1262140149840482344>El brindar una reseña injustificada puede derivar a prohibición permanente del soporte. Sé objetivo al brindar tal.')
+            .setDescription(`# TICKET CERRADO\n\n\n<:padlock:1262139671304212572>¡Hola! Tu ticket ha sido cerrado. Has recibido una copia de tal en el archivo adjunto. A continuación, podrás dejar tu reseña sobre dicho ticket, ¡no olvides opinar para poder mejorar día a día la atención que le brindamos a nuestros usuarios! Gracias por elegirnos n.n.\n\n<a:verificado__20:1263683997469380640>**INFORMACION TECNICA DEL TICKET**\nCategoria:\n\`\`\`${mas.category}\`\`\`\n<:simbolrojo:1269476102426984510> Reclamado por: Sin reclamar\n\n<:tickets:1260421798558695426> Copia del ticket:\n${data}\n\n\n<:numero_warning:1262138350719074394> **IMPORTANTE**:\n<:line_red:1262140149840482344>El brindar una reseña injustificada puede derivar a prohibición permanente del soporte. Sé objetivo al brindar tal.`)
             .setColor(0x0099ff)
             .setImage("https://cdn.discordapp.com/attachments/1190208694298890311/1261067970080407592/Black_and_White_Sports_Football_Ticket_20240711_151257_0001.gif?ex=6694e851&is=669396d1&hm=18a3df61f05705c36433561e8bdc27c4f102bbc99a8e09be18756be35703bcb7&")
-            .addFields({name: 'Transcripcion', value: `${data}`})
-        await i.user.send({ embeds: [embed], components: [selectRow]});
+            
+           
+
+        
+        const usu = client.users.cache.get(mas.user)
+
+        await usu.send({ embeds: [embed], components: [selectRow]});
+        
+        await perre.findOneAndDelete({ user: interaction.user.id });
+        
+        
 
         // Borrar el canal
         await interaction.channel.delete();

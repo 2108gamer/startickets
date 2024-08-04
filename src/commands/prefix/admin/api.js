@@ -4,7 +4,7 @@ const axios = require('axios');
 const fs = require('fs');
 const FormData = require('form-data');
 const path = require('path');
-
+const tt = require('../../../schemas/Schem');
 module.exports = {
     structure: {
         name: 'api',
@@ -19,22 +19,19 @@ module.exports = {
      * @param {[String]} args 
      */
     run: async (client, message, args) => {
-        const link = "http://localhost:3000/upload";
-        const filePath = path.join(__dirname, 'ticket.html'); // Asegúrate de que el archivo esté en la misma carpeta
-
-        // Crear una instancia de FormData
-        const form = new FormData();
-        form.append('file', fs.createReadStream(filePath));
-
         try {
-            const response = await axios.post(link, form, {
-                headers: {
-                    ...form.getHeaders()
-                }
-            });
-            console.log('Respuesta de la API:', response.data);
+            const data = await tt.findOne({ user: message.author.username });
+            console.log(data);
+            
+            if (data) {
+                await tt.findOneAndDelete({ user: message.author.username });
+                console.log('Data deleted for user:', message.author.username);
+            } else {
+                console.log('No data found for user:', message.author.username);
+            }
         } catch (error) {
-            console.error('Error al enviar el archivo:', error);
+            console.error('Error fetching data:', error);
         }
+    
     }
 };
