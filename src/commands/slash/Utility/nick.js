@@ -1,4 +1,4 @@
-const { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
 const ExtendedClient = require('../../../class/ExtendedClient');
 
 const https = require("https");
@@ -81,6 +81,11 @@ module.exports = {
               )
               .join("\n");
             const avatarURL = `https://minotar.net/helm/${nick}/100.png`;
+            const nicks = new ButtonBuilder()
+            .setLabel("Ver skin")
+            .setCustomId("btns")
+            .setStyle(ButtonStyle.Primary)
+            const boton = new ActionRowBuilder().addComponents(nicks)
     
             const embed = new EmbedBuilder()
               .setColor("Yellow")
@@ -97,7 +102,7 @@ module.exports = {
               .setThumbnail(avatarURL)
               .setTimestamp();
     
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] , components: [boton]});
           } else {
             await interaction.editReply(
               "No se encontraron nicks anteriores para este usuario."

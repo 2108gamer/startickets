@@ -4,7 +4,7 @@ const axios = require('axios');
 const fs = require('fs');
 const FormData = require('form-data');
 const path = require('path');
-const tt = require('../../../schemas/Schem');
+const perre = require('../../../schemas/Schem');
 module.exports = {
     structure: {
         name: 'api',
@@ -19,18 +19,12 @@ module.exports = {
      * @param {[String]} args 
      */
     run: async (client, message, args) => {
-        try {
-            const data = await tt.findOne({ user: message.author.username });
-            console.log(data);
-            
-            if (data) {
-                await tt.findOneAndDelete({ user: message.author.username });
-                console.log('Data deleted for user:', message.author.username);
-            } else {
-                console.log('No data found for user:', message.author.username);
-            }
+       
+      try {
+            const result = await perre.deleteOne({ user: message.author.id});
+            console.log(result);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error deleting data:', error);
         }
     
     }

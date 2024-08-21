@@ -1,6 +1,7 @@
 const { model, Schema } = require("mongoose");
  
-let perre = new Schema({
+let ticket = new Schema({
+    channel: String,
     user: String,
     Channel: String,
     category: String,
@@ -8,4 +9,4 @@ let perre = new Schema({
 
 })
  
-module.exports = model("perre", perre);
+module.exports = model("tickets", ticket);

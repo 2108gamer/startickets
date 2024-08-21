@@ -1,8 +1,12 @@
 const { ButtonInteraction, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const ExtendedClient = require('../../class/ExtendedClient');
+const { options } = require('superagent');
 
 module.exports = {
     customId: 'btns',
+    options: {
+        public: true
+    },
     /**
      * 
      * @param {ExtendedClient} client 

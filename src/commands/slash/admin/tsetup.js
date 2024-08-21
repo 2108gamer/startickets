@@ -1,55 +1,546 @@
-const { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, PermissionsBitField, Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
+const { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, calculateShardId, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
 const ExtendedClient = require('../../../class/ExtendedClient');
 const setup = require('../../../schemas/tschem');
+
 module.exports = {
     structure: new SlashCommandBuilder()
-        .setName('ticketse')
+        .setName('one')
         .setDescription('configura el sistema de tickets')
-        .addChannelOption(option => 
-            option.setName('canal').setDescription('Elije un canal').setRequired(true)
-            .addChannelTypes(ChannelType.GuildText))
-            .addRoleOption(option => option.setName('rol_staff').setDescription('Elije un rol con permisos para los tickets').setRequired(true))
-            .addStringOption(option => option.setName('titulo').setDescription('Escribe un titulo para el panel').setRequired(true))
-            .addStringOption(option => option.setName('descripcion').setDescription('Escribe una descripcion del panel').setRequired(true))
-            .addStringOption(option => option.setName('boton_label').setDescription('Escribe un label para el boton').setRequired(true))
-            .addStringOption(option => option.setName('boton_emoji').setDescription('Elije un emoji para el boton').setRequired(true)),
+        .addSubcommand((option) =>
+            option
+              .setName("blackjack")
+              .setDescription("Start a game of blackjack!")
+              .addIntegerOption((option) =>
+                option
+                  .setName("wager")
+                  .setDescription("The amount of banana's you wish to wager!")
+                  .setRequired(true)
+                  .setMinValue(1)
+              )
+            ),
     /**
      * @param {ExtendedClient} client 
      * @param {ChatInputCommandInteraction} interaction 
      */
-    run: async (client, interaction) => {
-        const canal = interaction.options.getChannel("canal")
-        const rol = interaction.options.getRole("rol_staff")
-        const titulo = interaction.options.getString("titulo")
-        const descripcion = interaction.options.getString("descripcion")
-        const label = interaction.options.getString("boton_label")
-        const emoji = interaction.options.getString("boton_emoji")
-      
-            const configembed = new EmbedBuilder()
-                  .setTitle(`📩 **Tickets | By Renyo** 📩`)
-                  .setDescription(`✅ **El sistema de tickets se configuro correctamente**\n\n📅 **Datos:**\n\n📪 **Canal:** <#${canal.id}>\n💬 **Rol:** <@&${rol.id}>\n🔴 **Titulo[Panel]:** \`${titulo}\`\n🔶 **Descripcion[Panel]:** \`${descripcion}\`\n🟢 **Boton[Label]:** \`${label}\`\n🔷 **Boton[Emoji]:** \`${emoji}\``)
-                  .setTimestamp()
-                  .setColor(`#2b2d31`)
-      
-            const panelembed = new EmbedBuilder()
-                .setTitle(`${titulo}`)
-                .setDescription(`${descripcion}`)
-                .setTimestamp()
-                .setColor(`#2b2d31`)
-      
-            const button = new ActionRowBuilder().addComponents(
+    run: async (client, interaction, profileData) => {
+        const wager = interaction.options.getInteger("wager");
+        const { Bananas } = "3";
+        const username = interaction.user;
+    
+        // Check if profile exists
+        
+        console.log(`profileExists: ${interaction.user}`);
+        try {
+          switch (
+            interaction.options.getSubcommand() // Type of gambling
+          ) {
+            case "blackjack":
+              // Check if USER has enough currency.
+              if (Bananas < wager) {
+                await interaction.deferReply({ ephemeral: true });
+                return await interaction.editReply(
+                  `You do not have enough :banana:'s to make your wager!`
+                );
+              }
+              console.log(`BlackJack Selected - User has enough currency`);
+    
+              let deck = createDeck();
+              let playerHand = [drawCard(deck), drawCard(deck)];
+              let dealerHand = [drawCard(deck), drawCard(deck)];
+    
+              let playerTotal = calculateHand(playerHand);
+              let dealerTotal = calculateHand(dealerHand);
+    
+              let embed = new EmbedBuilder()
+                .setColor("Random")
+                .setTitle("BlackJack")
+                .setDescription(
+                  "Hit - take another card\nStand - end the game\nDouble Down - double the bet, take one card, then end the game"
+                )
+                .addFields(
+                  {
+                    name: `Your hand`,
+                    value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                    inline: true,
+                  },
+                  {
+                    name: "Dealer's Hand",
+                    value: `${formatHand([dealerHand[0]])}, ❓\nValue: ❓`,
+                    inline: true,
+                  }
+                );
+    
+              const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`tickets`)
-                    .setLabel(`${label}`)
-                    .setEmoji(`${emoji}`)
-                    .setStyle(ButtonStyle.Secondary)
-      
-            
-          )
-          
-          interaction.reply({ embeds: [configembed], ephemeral: true});
-      
-          canal.send({ embeds: [panelembed], components: [button] })
+                  .setCustomId(`Hit`)
+                  .setLabel(`Hit`)
+                  .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                  .setCustomId(`Stand`)
+                  .setLabel(`Stand`)
+                  .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
+                  .setCustomId(`DoubleDown`)
+                  .setLabel(`Double Down`)
+                  .setStyle(ButtonStyle.Success)
+              );
+    
+              await interaction.reply({ embeds: [embed], components: [row] });
+    
+              const filter = (i) => i.user.id === interaction.user.id;
+              const collector = interaction.channel.createMessageComponentCollector(
+                {
+                  filter,
+                  time: 30000,
+                }
+              );
+    
+              collector.on(`collect`, async (i) => {
+                if (!i.isButton()) return;
+                await i.deferUpdate();
+    
+                if (i.customId === `Hit`) {
+                  console.log(`Player Selected Hit`);
+                  playerHand.push(drawCard(deck));
+                  playerTotal = calculateHand(playerHand);
+    
+                  if (playerTotal > 21) {
+                    //Player is less than 21
+                    user.Bananas -= wager;
+                    await user.save();
+                    embed = new EmbedBuilder()
+                      .setColor(`Random`)
+                      .setTitle(`BlackJack`)
+                      .addFields(
+                        {
+                          name: `Your Hand`,
+                          value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: `Dealer\'s hand`,
+                          value: `${formatHand(dealerHand)}\nValue: ${dealerTotal}`,
+                          inline: true,
+                        }
+                      );
+    
+                    const disableRow = new ActionRowBuilder().addComponents(
+                      new ButtonBuilder()
+                        .setCustomId(`hit`)
+                        .setLabel(`Hit`)
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(true),
+                      new ButtonBuilder()
+                        .setCustomId(`stand`)
+                        .setLabel(`Stand`)
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(true),
+                      new ButtonBuilder()
+                        .setCustomId(`doubleDown`)
+                        .setLabel(`Double Down`)
+                        .setStyle(ButtonStyle.Success)
+                        .setDisabled(true)
+                    );
+    
+                    await i.editReply({
+                      embeds: [embed],
+                      components: [disabledRow],
+                    });
+                    collector.stop();
+                  } else {
+                    embed = new EmbedBuilder()
+                      .setColor(`Random`)
+                      .setTitle(`Blackjack`)
+                      .setDescription(
+                        "Hit - take another card\nStand - end the game\nDouble Down - double the bet, take one card, then end the game"
+                      )
+                      .addFields(
+                        {
+                          name: `Your hand`,
+                          value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: "Dealer's Hand",
+                          value: `${formatHand([dealerHand[0]])}, ❓\nValue: ❓`,
+                          inline: true,
+                        }
+                      );
+                    await i.editReply({ embeds: [embed] });
+                  }
+              } else if (i.customId === `Stand`) {
+                  console.log(`Player Selected stand`);
+                  while (dealerTotal < 17) {
+                    dealerHand.push(drawCard(deck));
+                    dealerTotal = calculateHand(dealerHand);
+                  }
+                const user = interaction.user
+                  if (dealerTotal > 21 || dealerTotal < playerTotal) {
+                    user.Bananas += wager;
+                    embed = new EmbedBuilder()
+                      .setColor(`Random`)
+                      .setTitle(`BlackJack`)
+                      .addFields(
+                        {
+                          name: `Your Hand`,
+                          value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: "Dealers Hand",
+                          value: `You won ${wager} :banana:'s`,
+                          inline: false,
+                        }
+                      );
+                  } else if (dealerTotal === playerTotal) {
+                    embed = new EmbedBuilder()
+                      .setColor(`Random`)
+                      .setTitle(`BlackJack`)
+                      .addFields(
+                        {
+                          name: `Your Hand`,
+                          value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: "Dealer's Hand",
+                          value: `${formatHand(dealerHand)}\nValue: ${dealerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: "\u200B",
+                          value: `Push, wager returned`,
+                          inline: false,
+                        }
+                      );
+                  } else {
+                    user.Bananas -= wager;
+                    embed = new EmbedBuilder()
+                      .setColor(`Random`)
+                      .setTitle(`BlackJack`)
+                      .addFields(
+                        {
+                          name: `Your Hand`,
+                          value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: `Dealer\s Hand`,
+                          value: `${formatHand(dealerHand)}\nValue: ${dealerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: "\u200B",
+                          value: `You lost ${wager} :banana:'s`,
+                          inline: false,
+                        }
+                      );
+                  }
+                  await user.save();
+    
+                  const disableRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                      .setCustomId(`hit`)
+                      .setLabel(`Hit`)
+                      .setStyle(ButtonStyle.Primary)
+                      .setDisabled(true),
+                    new ButtonBuilder()
+                      .setCustomId(`stand`)
+                      .setLabel(`Stand`)
+                      .setStyle(ButtonStyle.Secondary)
+                      .setDisabled(true),
+                    new ButtonBuilder()
+                      .setCustomId(`doubleDown`)
+                      .setLabel(`Double Down`)
+                      .setStyle(ButtonStyle.Success)
+                      .setDisabled(true)
+                  );
+    
+                  await i.editReply({ embeds: [embed], components: [disabledRow] });
+                  collector.stop();
+                } else if (i.customId === `DoubleDown`) {
+                  console.log(`Player Selected double down`);
+                  playerHand.push(drawCard(deck));
+                  playerTotal = calculateHand(playerHand);
+    
+                  if (playerTotal > 21) {
+                    user.Bananas -= wager * 2;
+                    await user.save();
+    
+                    embed = new EmbedBuilder()
+                      .setColor(`Random`)
+                      .setTitle(`BlackJack`)
+                      .addFields(
+                        {
+                          name: `Your Hand`,
+                          value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: `Dealer\s Hand`,
+                          value: `${formatHand(dealerHand)}\nValue: ${dealerTotal}`,
+                          inline: true,
+                        },
+                        {
+                          name: "U200B",
+                          value: `You lost ${wager * 2} :banana:'s`,
+                          inline: false,
+                        }
+                      );
+    
+                    const disableRow = new ActionRowBuilder().addComponents(
+                      new ButtonBuilder()
+                        .setCustomId(`hit`)
+                        .setLabel(`Hit`)
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(true),
+                      new ButtonBuilder()
+                        .setCustomId(`stand`)
+                        .setLabel(`Stand`)
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(true),
+                      new ButtonBuilder()
+                        .setCustomId(`doubleDown`)
+                        .setLabel(`Double Down`)
+                        .setStyle(ButtonStyle.Success)
+                        .setDisabled(true)
+                    );
+    
+                    await i.editReply({
+                      embeds: [embed],
+                      components: [disableRow],
+                    });
+                    collector.stop();
+                  } else {
+                    while (dealerTotal < 17) {
+                      dealerHand.push(drawCard(deck));
+                      dealerTotal = calculateHand(dealerHand);
+                    }
+    
+                    if (dealerTotal > 21 || dealerTotal < playerTotal) {
+                      user.Bananas += wager * 2;
+                      embed = new EmbedBuilder().setColor(
+                        `Random`.setTitle(`BlackJack`).addFields(
+                          {
+                            name: `Your Hand`,
+                            value: `${formatHand(
+                              playerHand
+                            )}\nValue: ${playerTotal}`,
+                            inline: true,
+                          },
+                          {
+                            name: `Dealer\s Hand`,
+                            value: `${formatHand(
+                              dealerHand
+                            )}\nValue: ${dealerTotal}`,
+                            inline: true,
+                          },
+                          {
+                            name: "\u200B",
+                            value: `You won ${wager * 2} :banana:'s`,
+                            inline: false,
+                          }
+                        )
+                      );
+                    } else if (dealerTotal === playerTotal) {
+                      embed = new EmbedBuilder()
+                        .setColor(`Random`)
+                        .setTitle(`BlackJack`)
+                        .addFields(
+                          {
+                            name: `Your Hand`,
+                            value: `${formatHand(
+                              playerHand
+                            )}\nValue: ${playerTotal}`,
+                            inline: true,
+                          },
+                          {
+                            name: `Dealer\s Hand`,
+                            value: `${formatHand(
+                              dealerHand
+                            )}\nValue: ${dealerTotal}`,
+                            inline: true,
+                          },
+                          {
+                            name: "\u200B",
+                            value: `Push, wager returned`,
+                            inline: false,
+                          }
+                        )
+                        .setTimestamp();
+                    } else {
+                      user.Bananas -= wager * 2;
+                      embed = new EmbedBuilder()
+                        .setColor(`Random`)
+                        .setTitle(`BlackJack`)
+                        .addFields(
+                          {
+                            name: `Your Hand`,
+                            value: `${formatHand(
+                              playerHand
+                            )}\nValue: ${playerTotal}`,
+                            inline: true,
+                          },
+                          {
+                            name: `Dealer\s Hand`,
+                            value: `${formatHand(
+                              dealerHand
+                            )}\nValue: ${dealerTotal}`,
+                            inline: true,
+                          },
+                          {
+                            name: "\u200B",
+                            value: `You lost ${wager * 2} :banana:'s`,
+                            inline: false,
+                          }
+                        );
+                    }
+                    
+    
+                    const disableRow = new ActionRowBuilder().addComponents(
+                      new ButtonBuilder()
+                        .setCustomId(`hit`)
+                        .setLabel(`Hit`)
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(true),
+                      new ButtonBuilder()
+                        .setCustomId(`stand`)
+                        .setLabel(`Stand`)
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(true),
+                      new ButtonBuilder()
+                        .setCustomId(`doubleDown`)
+                        .setLabel(`Double Down`)
+                        .setStyle(ButtonStyle.Success)
+                        .setDisabled(true)
+                    );
+    
+                    await i.editReply({
+                      embeds: [embed],
+                      components: [disableRow],
+                    });
+                    collector.stop();
+                  }
+                }
+              });
+    
+              collector.on("end", async (collected) => {
+                if (collected.size === 0) {
+                  const dealerTotal = calculateHand(dealerHand);
+                  embed = new EmbedBuilder()
+                    .setColor(`#0099ff`)
+                    .setTitle(`BlackJack`)
+                    .setDescription("The game was canceled due to inactivitiy.")
+                    .addFields(
+                      {
+                        name: `Your Hand`,
+                        value: `${formatHand(playerHand)}\nValue: ${playerTotal}`,
+                        inline: true,
+                      },
+                      {
+                        name: `Dealer\s Hand`,
+                        value: `${formatHand(dealerHand)}\nValue: ${dealerHand}`,
+                        inline: true,
+                      },
+                      {
+                        name: "\u200B",
+                        value: `Push, wager returned`,
+                        inline: false,
+                      }
+                    );
+    
+                  const disableRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                      .setCustomId(`hit`)
+                      .setLabel(`Hit`)
+                      .setStyle(ButtonStyle.Primary)
+                      .setDisabled(true),
+                    new ButtonBuilder()
+                      .setCustomId(`stand`)
+                      .setLabel(`Stand`)
+                      .setStyle(ButtonStyle.Secondary)
+                      .setDisabled(true),
+                    new ButtonBuilder()
+                      .setCustomId(`doubleDown`)
+                      .setLabel(`Double Down`)
+                      .setStyle(ButtonStyle.Success)
+                      .setDisabled(true)
+                  );
+    
+                  await interaction.reply({
+                    embeds: [embed],
+                    components: [disableRow],
+                  });
+                }
+              });
+              break;
+          }
+        } catch (err) {
+          console.log(err);
+        }
+      },
+    };
+    
+    //Function
+    
+    function createDeck() {
+      const suits = ["♠", "♥", "♦", "♣"];
+      const values = [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+        "A",
+      ];
+      let deck = [];
+    
+      for (let suit of suits) {
+        for (let value of values) {
+          deck.push({ suit, value });
+        }
+      }
+      return deck;
+    }
+    
+    function drawCard(deck) {
+      const randomIndex = Math.floor(Math.random() * deck.length);
+      const card = deck.splice(randomIndex, 1)[0];
+      return card;
+    }
+    
+    function calculateHand(hand) {
+      let total = 0;
+      let aces = 0;
+    
+      for (let card of hand) {
+        if (card.value === "A") {
+          aces++;
+          total += 11;
+        } else if (["K", "Q", "J"].includes(card.value)) {
+          total += 10;
+        } else {
+          total += parseInt(card.value);
+        }
+      }
+    
+      while ((total > 21) & (aces > 0)) {
+        total -= 10;
+        aces--;
+      }
+      return total;
+    }
+    
+    function formatHand(hand) {
+      return hand.map((card) => `${card.value}${card.suit}`).join(",");
+    
           
     }
-};
+;

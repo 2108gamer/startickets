@@ -35,8 +35,8 @@ module.exports = {
         nsfwMessage: "Este canal no es para eso.",
         ownerMessage: "Solo tiene permiso el developer",
         developerMessage: "No puedes usar este conando.",
-        cooldownMessage: "Mas despacio velocista.", // '{cooldown}' is a variable that shows the time to use the command again (in seconds)
-        globalCooldownMessage: "Mas despacio velocista.", // '{cooldown}' is a variable that shows the time to use the command again (in seconds)
+        cooldownMessage: "Podras usar este comando en {cooldown}.", // '{cooldown}' is a variable that shows the time to use the command again (in seconds)
+        globalCooldownMessage: "Podras usar este comando en {cooldown}.", // '{cooldown}' is a variable that shows the time to use the command again (in seconds)
         notHasPermissionMessage: "No tienes permisos suficientes.",
         notHasPermissionComponent: "No.",
         missingDevIDsMessage: "Solo es para developers este comando."

@@ -1,4 +1,4 @@
-const { ButtonInteraction, Collector, EmbedBuilder, messageLink, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
+const { ButtonInteraction, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const ExtendedClient = require('../../class/ExtendedClient');
 
 module.exports = {
@@ -49,14 +49,55 @@ module.exports = {
     });
     
     const collector = channel.createMessageCollector({filter: filter})
+
+    let timeout; // Variable para almacenar el timeout
+
+    const resetTimeout = () => {
+
+      // Si ya existe un timeout, lo limpiamos
+
+      if (timeout) {
+
+        clearTimeout(timeout);
+
+      }
+
+      // Configuramos un nuevo timeout
+
+      timeout = setTimeout(() => {
+
+     const noResponse = new EmbedBuilder()
+   .setTitle("Ticket en resolucion")
+    .setDescription("Test no response")
+          
+          
+    interaction.channel.send('No se ha recibido ningún mensaje en 10 minutos.')
+
+    .then(sentMessage => {
+
+        setTimeout(() => {
+
+            sentMessage.delete().catch(console.error);
+
+        }, 300000); // 300,000 milisegundos = 5 minutos
+
+    })
+      }, 10 * 60 * 1000); // 10 minutos
+
+    };
+
+    // Iniciamos el timeout cuando se crea el collector
+
+    resetTimeout();
     
     collector.on("collect", async (msg) => {
-        // Asegúrate de borrar el mensaje de la pregunta antes de enviar la siguiente
+   
         if (currentQuestionMessage) {
             await currentQuestionMessage.delete().catch(console.error);
             currentQuestionMessage = null; // Resetear la referencia
         }
-        // Borrar el mensaje de la respuesta
+     
+        resetTimeout()
         await msg.delete().catch(console.error);
     
         if(collectCounter < preguntas.length) {
@@ -72,6 +113,11 @@ module.exports = {
     }) 
     
     collector.on("end", async (collected, reason) => {
+        if (timeout) {
+
+            clearTimeout(timeout); 
+    
+          }
         if(reason === "fulfilled") {
             let index = 1;
             const mappedResponses = collected.map((msg) => {
@@ -86,5 +132,7 @@ module.exports = {
             .setColor("Gold");
             interaction.channel.send({embeds: [apl], components: [buttons]});
         }
-    })}
+    })
+
+}
 }

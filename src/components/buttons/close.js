@@ -1,7 +1,7 @@
-const { ButtonInteraction, SlashCommandBuilder, PermissionFlagsBits, Client, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, SelectMenuBuilder, MessageAttachment, Attachment } = require('discord.js');
+const { ButtonInteraction,  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require('discord.js');
 const ExtendedClient = require('../../class/ExtendedClient');
 const { createTranscript } = require('discord-html-transcripts');
-const perre = require('../../schemas/Schem');
+const ticket = require('../../schemas/Schem');
 module.exports = {
     customId: 'closee',
     /**
@@ -95,7 +95,7 @@ collector.on('collect', async i => {
 
              const data = response.data
 
-             const mas = await perre.findOne({user: interaction.user.id})
+             const mas = await ticket.findOne({Channel: interaction.channel.id})
              console.log(mas)
 
 
@@ -111,7 +111,7 @@ collector.on('collect', async i => {
 
         await usu.send({ embeds: [embed], components: [selectRow]});
         
-        await perre.findOneAndDelete({ user: interaction.user.id });
+        await ticket.deleteOne({ user: interaction.user.id });
         
         
 

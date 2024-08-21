@@ -1,7 +1,7 @@
 const { ButtonInteraction, EmbedBuilder } = require('discord.js');
 
 const ExtendedClient = require('../../class/ExtendedClient');
-
+const ticket = require("../../schemas/Schem")
 module.exports = {
 
     customId: 'niego',
@@ -28,7 +28,9 @@ module.exports = {
 .setTimestamp()     
  .setFooter({text: `${interaction.guild} Tickets`})     
 
-    user.send({embeds: [embed]})        
+    user.send({embeds: [embed]})   
+    
+    await ticket.deleteOne({user: interaction.user.id})
 
     }
 
